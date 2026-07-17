@@ -1,0 +1,47 @@
+# doh-lookup configuration (optional).
+# Copy to ~/.config/doh-lookup/config.toml to override defaults.
+# No credentials are needed — the Cloudflare/Google DoH endpoints are public.
+# Precedence: command-line flag > environment variable > this file > default.
+
+[provider]
+# Default DoH provider: "cloudflare" or "google". Cloudflare has a clear
+# privacy stance (does not forward ECS; short retention) and is the default.
+# The DOH_LOOKUP_PROVIDER environment variable overrides this value.
+# default = "cloudflare"
+
+# Endpoint overrides. Leave unset to use the built-in JSON DoH endpoints
+# (Cloudflare: https://cloudflare-dns.com/dns-query, Google:
+# https://dns.google/resolve). Override only for a proxy or a compatible
+# resolver. DOH_LOOKUP_CLOUDFLARE_URL / DOH_LOOKUP_GOOGLE_URL override these.
+# cloudflare_url = "https://cloudflare-dns.com/dns-query"
+# google_url = "https://dns.google/resolve"
+
+[query]
+# Record types fetched when --type is omitted, as a comma-separated list
+# (not a TOML array). This is the one-shot "what does this domain look like"
+# profile aimed at triage. The DOH_LOOKUP_PROFILE environment variable
+# overrides this value.
+# profile = "A,AAAA,MX,TXT,NS,SOA,CAA"
+
+# Ask the resolver not to forward an EDNS Client Subnet, so your network is
+# not leaked to authoritative servers (honored by Google; Cloudflare does not
+# forward ECS regardless). The DOH_LOOKUP_SUPPRESS_ECS environment variable
+# overrides this value.
+# suppress_ecs = true
+
+[cache]
+# Minimum time a cached answer stays fresh, in seconds. Each record's own DNS
+# TTL is honored and floored to this value, so a bulk sweep cannot re-hit the
+# resolver more often than this. The DOH_LOOKUP_CACHE_TTL_FLOOR_SECONDS
+# environment variable overrides this value.
+# ttl_floor_seconds = 60
+
+# Where cached answers are stored (optional).
+# Default: ~/.cache/doh-lookup
+# The DOH_LOOKUP_CACHE_DIR environment variable overrides this value.
+# dir = "~/.cache/doh-lookup"
+
+[network]
+# Network timeout in seconds for each DoH HTTPS exchange.
+# The DOH_LOOKUP_TIMEOUT_SECONDS environment variable overrides this value.
+# timeout_seconds = 10
