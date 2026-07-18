@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.1] - 2026-07-18
 
 ### Fixed
 
@@ -46,4 +46,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   leaked. Sectioned-TOML config + `DOH_LOOKUP_*` environment overrides.
   Zero credentials, zero external dependencies.
 
+[0.1.1]: https://github.com/nlink-jp/doh-lookup/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nlink-jp/doh-lookup/releases/tag/v0.1.0
