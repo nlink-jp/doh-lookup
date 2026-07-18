@@ -36,6 +36,10 @@ doh-lookup lookup example.com
 # Narrow to specific record types
 doh-lookup lookup --type A,MX example.com
 
+# Underscore-prefixed service labels resolve too (DMARC / DKIM / SRV / TLSA)
+doh-lookup lookup --type TXT _dmarc.example.com
+doh-lookup lookup --type SRV _sip._tcp.example.com
+
 # Reverse (PTR) — pass an IP
 doh-lookup lookup 8.8.8.8
 

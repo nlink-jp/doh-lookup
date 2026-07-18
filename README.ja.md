@@ -34,6 +34,10 @@ doh-lookup lookup example.com
 # レコード種別を絞る
 doh-lookup lookup --type A,MX example.com
 
+# アンダースコア始まりのサービスラベルも引ける（DMARC / DKIM / SRV / TLSA）
+doh-lookup lookup --type TXT _dmarc.example.com
+doh-lookup lookup --type SRV _sip._tcp.example.com
+
 # 逆引き（PTR）— IP を渡す
 doh-lookup lookup 8.8.8.8
 

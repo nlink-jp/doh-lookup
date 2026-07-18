@@ -73,10 +73,12 @@ internal/mcp/           Zero-dep stdio JSON-RPC 2.0 server + tools (usage.md emb
 - **`authenticated` = any queried type returned AD.** It means the resolver
   validated the chain; the tool does **not** verify signatures itself
   (that would need wireformat + crypto — a v2 candidate).
-- **Validation gate before any network I/O.** Not-IP input must pass RFC
-  hostname validation (≤253, labels 1–63 LDH, ≥2 labels, TLD not all-numeric)
-  or the request is refused (CLI exit 2, MCP `invalid_input`). This blocks
-  request-splitting into the HTTPS query and cache-key pollution.
+- **Validation gate before any network I/O.** Not-IP input must pass DNS-name
+  validation (≤253, labels 1–63, charset LDH plus underscore, ≥2 labels, TLD
+  not all-numeric) or the request is refused (CLI exit 2, MCP `invalid_input`).
+  This blocks request-splitting into the HTTPS query and cache-key pollution.
+  Underscore is allowed (unlike strict hostname LDH) so underscore-prefixed
+  targets — `_dmarc`, `_domainkey`, `_service._proto` for SRV/TLSA — resolve.
 - **No credentials.** Cloudflare/Google DoH are public.
 - **Engine is shared** by CLI and MCP so their behaviour cannot diverge; the
   HTTP transport is an injected `Doer` interface, mocked in tests.

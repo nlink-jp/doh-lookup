@@ -73,9 +73,12 @@ func classifyIP(in string) (Target, error) {
 	return Target{Kind: KindIP, Original: in, Value: addr.String(), Addr: addr}, nil
 }
 
-// classifyDomain applies the RFC hostname rules (total ≤253 after the
-// optional trailing dot, labels 1–63, LDH, last label not all-numeric). IDN
-// U-labels are converted to punycode A-labels first, so the LDH validation
+// classifyDomain validates DNS-name syntax (total ≤253 after the optional
+// trailing dot, labels 1–63, DNS-label charset — LDH plus underscore — last
+// label not all-numeric). Underscore is permitted because underscore-prefixed
+// labels (_dmarc, _domainkey, and the _service._proto labels of SRV/TLSA) are
+// legitimate query targets even though they are not valid hostnames. IDN
+// U-labels are converted to punycode A-labels first, so the charset check
 // below always sees the wire form.
 func classifyDomain(in string) (Target, error) {
 	name := strings.ToLower(strings.TrimSuffix(in, "."))
@@ -119,7 +122,13 @@ func checkLabel(l string) error {
 	}
 	for i := 0; i < len(l); i++ {
 		c := l[i]
-		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' {
+		// LDH plus underscore. Underscore is not a hostname character, but it
+		// is a valid DNS label octet and is the canonical form of many record
+		// targets we must be able to resolve: _dmarc / _domainkey (email
+		// auth), _acme-challenge (ACME), and the _service._proto labels of
+		// SRV/TLSA. Unlike '-', it may appear in any position (leading
+		// included), so there is no positional restriction on it.
+		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_' {
 			continue
 		}
 		return fmt.Errorf("%w: label contains %q", ErrInvalid, rune(c))

@@ -18,6 +18,9 @@ func TestClassify(t *testing.T) {
 		{"domain", "Example.COM", KindDomain, "example.com"},
 		{"domain trailing dot", "example.com.", KindDomain, "example.com"},
 		{"idn domain", "日本語.jp", KindDomain, "xn--wgv71a119e.jp"},
+		{"underscore service label", "_dmarc.example.com", KindDomain, "_dmarc.example.com"},
+		{"dkim selector", "Selector1._domainkey.example.com", KindDomain, "selector1._domainkey.example.com"},
+		{"srv service._proto labels", "_sip._tcp.example.com", KindDomain, "_sip._tcp.example.com"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Accept underscore-prefixed DNS labels. The input validation gate applied
+  strict hostname (LDH) rules, which rejected legitimate query targets such as
+  `_dmarc.example.com`, `selector._domainkey.example.com`, and the
+  `_service._proto` labels of SRV/TLSA records. Underscore is a valid DNS
+  label octet and is now accepted in any label position; the CRLF/control-
+  character injection gate is unchanged.
+
 ## [0.1.0] - 2026-07-17
 
 ### Added
