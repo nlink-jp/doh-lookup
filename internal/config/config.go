@@ -191,10 +191,19 @@ func parseBool(v string) (bool, error) {
 	return false, fmt.Errorf("%q is not a boolean", v)
 }
 
+// The range is stated from the inside. ParseFloat also reads "NaN" and "Inf",
+// and NaN fails every comparison — so a check written as "reject what is below
+// the floor" lets it through, and the Duration it becomes is whatever the
+// platform makes of NaN. The ceiling keeps a number like 1e300 from
+// overflowing a Duration into something negative.
+// One parser serves the network timeout and the cache's TTL floor, so the
+// ceiling is the larger need: a year, which is still far from overflow.
+const maxSeconds = 366 * 24 * 3600
+
 func parseSeconds(v string) (time.Duration, error) {
 	s, err := strconv.ParseFloat(v, 64)
-	if err != nil || s <= 0 {
-		return 0, fmt.Errorf("%q is not a positive number", v)
+	if err != nil || !(s > 0 && s <= maxSeconds) {
+		return 0, fmt.Errorf("%q is not a number above 0 and at most %d", v, maxSeconds)
 	}
 	return time.Duration(s * float64(time.Second)), nil
 }

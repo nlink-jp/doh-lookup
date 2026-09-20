@@ -82,3 +82,19 @@ func TestEnvOverride(t *testing.T) {
 		t.Errorf("Profile = %v, want [A NS]", cfg.Profile)
 	}
 }
+
+// ParseFloat reads "NaN" and "Inf", and NaN passes any range check written as
+// "reject what is below the floor". A number is accepted from inside its range.
+func TestNumbersThatAreNotNumbersAreRefused(t *testing.T) {
+	for _, in := range []string{"NaN", "nan", "Inf", "+Inf", "-Inf", "1e300", "-1"} {
+		if d, err := parseSeconds(in); err == nil {
+			t.Errorf("parseSeconds(%q) = %v, want a refusal", in, d)
+		}
+	}
+	if d, err := parseSeconds("1.5"); err != nil || d <= 0 {
+		t.Errorf("parseSeconds(\"1.5\") = %v, %v", d, err)
+	}
+	if _, err := parseSeconds("0"); err == nil {
+		t.Errorf("parseSeconds(\"0\") was accepted")
+	}
+}
