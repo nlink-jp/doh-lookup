@@ -133,7 +133,7 @@ func (c *Client) Query(p Provider, name, rrType string, cd bool) (*Response, err
 	if err != nil {
 		return nil, fmt.Errorf("doh request to %s: %w", p.Name, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
