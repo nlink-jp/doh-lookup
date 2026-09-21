@@ -115,6 +115,14 @@ internal/mcp/           Zero-dep stdio JSON-RPC 2.0 server + tools (usage.md emb
   `Comment` can be a string or an array across providers.
 - **Direct RRSIG/ANY queries** may return SERVFAIL from the resolver — that is a
   real upstream response, surfaced as-is, not a bug.
+- **Tool schemas are closed; the decoder is not.** Every `inputSchema` is built
+  by `obj()` in `internal/mcp/tools.go`, which sets `additionalProperties: false`
+  (org ADR-021 §10), and `TestEveryToolSchemaIsValidAndClosed` fails if a tool
+  escapes it — so build a new schema with `obj()`, not a map literal. That flag
+  is only the *declared* half: `toolLookup` still decodes with a plain
+  `json.Unmarshal`, so an unknown argument from a client that does not validate
+  the schema is silently ignored rather than refused. ADR-021 pairs the flag with
+  `json.Decoder.DisallowUnknownFields`; that half is not implemented here.
 - **Status: scaffold + tests (Phase 2 of the RFP).** Core CLI + MCP are live
   and network-verified against Cloudflare/Google; the offline suite and the
   live E2E harness both pass. Remaining before release: docs polish and the

@@ -25,6 +25,17 @@ const Instructions = "doh-lookup collects a domain's DNS records over DoH (DNS o
 	"states the resolver, endpoint, and DNSSEC AD flag. Tool errors are structured JSON ({code, message}). " +
 	"Call get_usage for the full tool reference and error-recovery table. No credentials are required."
 
+// obj builds a tool's input schema. Every schema goes through here so that
+// org ADR-021 §10's `additionalProperties: false` is set once instead of being
+// remembered per tool — the next tool added gets the closed schema for free.
+func obj(props map[string]any, required ...string) map[string]any {
+	s := map[string]any{"type": "object", "properties": props, "additionalProperties": false}
+	if len(required) > 0 {
+		s["required"] = required
+	}
+	return s
+}
+
 // toolsList returns the advertised tool set with JSON Schema for each input.
 func toolsList() any {
 	return map[string]any{
@@ -32,28 +43,24 @@ func toolsList() any {
 			{
 				"name":        "get_usage",
 				"description": "Return this server's operating manual (markdown): the tools, the result schema, and the error-recovery table. Call it once before first use.",
-				"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+				"inputSchema": obj(map[string]any{}),
 			},
 			{
 				"name":        "lookup",
 				"description": "Collect DNS records for a domain (forward) or IP (PTR reverse) over DoH. A domain with no explicit types uses the configured profile (A/AAAA/MX/TXT/NS/SOA/CAA). The result records which resolver/endpoint answered and the DNSSEC AD flag. Answers are cached locally, honoring DNS TTLs.",
-				"inputSchema": map[string]any{
-					"type":     "object",
-					"required": []string{"query"},
-					"properties": map[string]any{
-						"query":    map[string]any{"type": "string", "description": "Domain name (IDN ok) or IP address."},
-						"types":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Record types (e.g. [\"A\",\"MX\"]). Ignored for IPs (always PTR). Default: the configured profile."},
-						"provider": map[string]any{"type": "string", "enum": []string{"cloudflare", "google"}, "description": "DoH provider (default: configured, usually cloudflare)."},
-						"cd":       map[string]any{"type": "boolean", "description": "Checking disabled: return records even if DNSSEC validation fails."},
-						"refresh":  map[string]any{"type": "boolean", "description": "Bypass the local cache and re-query."},
-						"raw":      map[string]any{"type": "boolean", "description": "Include each resolver's raw JSON response."},
-					},
-				},
+				"inputSchema": obj(map[string]any{
+					"query":    map[string]any{"type": "string", "description": "Domain name (IDN ok) or IP address."},
+					"types":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Record types (e.g. [\"A\",\"MX\"]). Ignored for IPs (always PTR). Default: the configured profile."},
+					"provider": map[string]any{"type": "string", "enum": []string{"cloudflare", "google"}, "description": "DoH provider (default: configured, usually cloudflare)."},
+					"cd":       map[string]any{"type": "boolean", "description": "Checking disabled: return records even if DNSSEC validation fails."},
+					"refresh":  map[string]any{"type": "boolean", "description": "Bypass the local cache and re-query."},
+					"raw":      map[string]any{"type": "boolean", "description": "Include each resolver's raw JSON response."},
+				}, "query"),
 			},
 			{
 				"name":        "cache_status",
 				"description": "Report the local answer-cache state: entry count, TTL floor, and the default provider.",
-				"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+				"inputSchema": obj(map[string]any{}),
 			},
 		},
 	}
