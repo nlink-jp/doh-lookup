@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -34,6 +35,33 @@ func obj(props map[string]any, required ...string) map[string]any {
 		s["required"] = required
 	}
 	return s
+}
+
+// decodeArgs decodes a tool's arguments strictly: an argument the tool does not
+// declare is refused by name, and a malformed argument object is refused rather
+// than read as an empty one. Every tool decodes through here.
+//
+// obj() above is only the declared half of org ADR-021 §4 — what a
+// schema-checking client refuses before the call. This is the half that
+// actually refuses, and it is needed because not every client checks the
+// schema. The `_ = json.Unmarshal` this replaces discarded the decode error as
+// well as the unknown field, so both defects were silent in the same way: a
+// misspelt `types` collected the configured profile and returned it as the
+// record types asked for, and `{"query": 1}` ran as if no target had been
+// named.
+func decodeArgs(raw json.RawMessage, into any) error {
+	raw = bytes.TrimSpace(raw)
+	// Omitted or null arguments mean the empty object, not an error: a tool
+	// whose arguments are all optional is legitimately called with none.
+	if len(raw) == 0 || string(raw) == "null" {
+		raw = []byte("{}")
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(into); err != nil {
+		return errors.New("arguments: " + err.Error())
+	}
+	return nil
 }
 
 // toolsList returns the advertised tool set with JSON Schema for each input.
@@ -76,10 +104,17 @@ func (s *server) toolsCall(params json.RawMessage) (toolResult, *rpcError) {
 	}
 	switch p.Name {
 	case "get_usage":
+		// No arguments — which still means "none", not "any".
+		if err := decodeArgs(p.Arguments, &struct{}{}); err != nil {
+			return errorResult("invalid_input", err.Error()), nil
+		}
 		return textResult(false, usageMarkdown), nil
 	case "lookup":
 		return s.toolLookup(p.Arguments), nil
 	case "cache_status":
+		if err := decodeArgs(p.Arguments, &struct{}{}); err != nil {
+			return errorResult("invalid_input", err.Error()), nil
+		}
 		return s.toolCacheStatus(), nil
 	default:
 		return toolResult{}, &rpcError{Code: -32602, Message: "unknown tool: " + p.Name}
@@ -95,7 +130,9 @@ func (s *server) toolLookup(args json.RawMessage) toolResult {
 		Refresh  bool     `json:"refresh"`
 		Raw      bool     `json:"raw"`
 	}
-	_ = json.Unmarshal(args, &a)
+	if err := decodeArgs(args, &a); err != nil {
+		return errorResult("invalid_input", err.Error())
+	}
 	if a.Query == "" {
 		return errorResult("invalid_input", "provide 'query' (a domain name or IP address)")
 	}

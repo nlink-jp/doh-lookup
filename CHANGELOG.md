@@ -6,6 +6,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **An MCP tool call carrying an argument the tool does not declare now fails
+  instead of being quietly ignored.** This is a deliberate behaviour change,
+  required by org ADR-021 §4. Until now a misspelt argument was dropped and the
+  call ran without it: send `type` instead of `types` and the configured
+  profile's records come back looking like the record types that were asked
+  for, and a misspelt `provider` sends the query to a different resolver than
+  the one named — which is the very thing an out-of-band lookup is chosen to
+  control. Every tool — including `get_usage` and `cache_status`, which take no
+  arguments — now decodes with `DisallowUnknownFields` and refuses the call,
+  naming the offending field:
+  `{"code":"invalid_input","message":"arguments: json: unknown field \"type\""}`.
+
+  A malformed argument object is refused for the same reason. The decode error
+  used to be discarded along with the unknown field, so `{"query": 1}` ran as
+  if no target had been named and came back with "provide 'query'", an answer
+  that contradicted the request. It now reports the type mismatch.
+
+  Nothing runs before the arguments decode, so a rejected call sends no DNS
+  query. Omitting `arguments`, or sending `{}` or `null`, still means "no
+  arguments" and is not an error. There is no compatibility shim: an argument
+  name this server does not declare has never meant anything, so the only fix
+  is to correct it.
+
 ### Fixed
 
 - **Every MCP tool input schema is closed.** The schemas omitted
@@ -14,9 +39,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   single `obj()` helper that sets the flag, and an arch test fails if a tool's
   schema omits it — org ADR-021 §10 requires the test as well as the flag,
   because a rule stated only in prose is re-decided by whoever adds the next
-  tool. The server's own argument decoding is unchanged and still lenient: it
-  does not use `DisallowUnknownFields`, so an unknown argument that reaches it
-  is ignored rather than refused.
+  tool.
 
 ## [0.1.2] - 2026-09-21
 

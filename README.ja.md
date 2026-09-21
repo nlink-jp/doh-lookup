@@ -87,7 +87,17 @@ doh-lookup mcp   # stdio JSON-RPC 2.0
 
 ツール: `lookup`（ドメインまたは IP）・`cache_status`・`get_usage`。まず
 `get_usage` を呼んで全リファレンスとエラー回復表を取得すること。エラーは構造化
-JSON（`{code, message}`）。登録例（Claude Code）:
+JSON（`{code, message}`）。
+
+**引数は厳格に検査されます.** ツールが宣言していない引数を含む呼び出しは
+`invalid_input` で失敗し、その名前を挙げます（`types` のつもりで `type` を
+渡した場合は `arguments: json: unknown field "type"`）。従来は無視して実行して
+いたため、`types` の綴り間違いは設定プロファイルの結果を「要求したレコード型」
+として返していました。型が違う引数も同様に拒否されます。引数のデコードより前には
+何も実行しないので、拒否された呼び出しは DNS クエリを送りません。引数をまったく
+渡さない呼び出しは従来どおり「引数なし」として扱われます。
+
+登録例（Claude Code）:
 
 ```json
 {

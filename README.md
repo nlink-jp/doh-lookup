@@ -89,7 +89,17 @@ doh-lookup mcp   # stdio JSON-RPC 2.0
 
 Tools: `lookup` (domain or IP), `cache_status`, `get_usage`. Call `get_usage`
 first for the full reference and error-recovery table. Errors are structured
-JSON (`{code, message}`). Example registration (Claude Code):
+JSON (`{code, message}`).
+
+**Arguments are checked strictly.** A call carrying an argument a tool does not
+declare fails with `invalid_input`, naming it — `arguments: json: unknown field
+"type"` when `types` was meant — rather than running without it. A misspelt
+`types` used to be dropped, returning the configured profile as if it were the
+record types requested. Wrong-typed arguments are refused the same way, and
+nothing runs before the arguments decode, so a rejected call sends no DNS query.
+Omitting arguments entirely still means "none".
+
+Example registration (Claude Code):
 
 ```json
 {

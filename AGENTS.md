@@ -115,14 +115,21 @@ internal/mcp/           Zero-dep stdio JSON-RPC 2.0 server + tools (usage.md emb
   `Comment` can be a string or an array across providers.
 - **Direct RRSIG/ANY queries** may return SERVFAIL from the resolver — that is a
   real upstream response, surfaced as-is, not a bug.
-- **Tool schemas are closed; the decoder is not.** Every `inputSchema` is built
-  by `obj()` in `internal/mcp/tools.go`, which sets `additionalProperties: false`
-  (org ADR-021 §10), and `TestEveryToolSchemaIsValidAndClosed` fails if a tool
-  escapes it — so build a new schema with `obj()`, not a map literal. That flag
-  is only the *declared* half: `toolLookup` still decodes with a plain
-  `json.Unmarshal`, so an unknown argument from a client that does not validate
-  the schema is silently ignored rather than refused. ADR-021 pairs the flag with
-  `json.Decoder.DisallowUnknownFields`; that half is not implemented here.
+- **Tool schemas are closed and the decoder enforces it.** Every `inputSchema`
+  is built by `obj()` in `internal/mcp/tools.go`, which sets
+  `additionalProperties: false` (org ADR-021 §10), and
+  `TestEveryToolSchemaIsValidAndClosed` fails if a tool escapes it — so build a
+  new schema with `obj()`, not a map literal. The flag is only the *declared*
+  half; the enforcing half is `decodeArgs()` beside it
+  (`json.Decoder.DisallowUnknownFields`), which every tool handler decodes
+  through, including the argument-less ones. **A call carrying an argument this
+  server does not declare now fails, naming the field, instead of being
+  silently ignored** — deliberate, per ADR-021 §4, because the schema says what
+  is allowed and the decoder is what actually refuses. `decodeArgs` also stops
+  discarding the decode error, so a wrong-typed argument no longer runs the tool
+  on zero values. Omitted or `null` arguments still mean the empty object. Do
+  not add a `_ = json.Unmarshal` back, and do not add a compatibility shim: the
+  ADR's one-release grace covers only the retired `workspace_root` spellings.
 - **Status: scaffold + tests (Phase 2 of the RFP).** Core CLI + MCP are live
   and network-verified against Cloudflare/Google; the offline suite and the
   live E2E harness both pass. Remaining before release: docs polish and the

@@ -69,6 +69,16 @@ Return this manual.
 A `NXDOMAIN` result is returned as a normal (non-error) result with
 `status: "NXDOMAIN"` — the name not existing is itself the answer.
 
+## Arguments are strict
+
+Every tool refuses an argument it does not declare, naming it:
+`arguments: json: unknown field "type"` (the field is `types`). A wrong-typed
+argument is refused the same way. Nothing runs before the arguments decode, so
+a rejected call sends no DNS query — fix the name or the type and call again.
+This is the enforcing half of the closed schemas (org ADR-021 §4); a misspelt
+`types` used to be dropped, which returned the configured profile as if it were
+the record types requested.
+
 ## Error recovery
 
 Errors are structured JSON: `{"code": "...", "message": "..."}`.
@@ -76,6 +86,8 @@ Errors are structured JSON: `{"code": "...", "message": "..."}`.
 | code            | meaning                                   | recovery                                                        |
 |-----------------|-------------------------------------------|----------------------------------------------------------------|
 | `invalid_input` | not a valid domain or IP (or empty query) | fix the target; do not retry unchanged                         |
+| `invalid_input` + `arguments: json: unknown field "…"` | an argument name this tool does not declare — usually a typo | fix the spelling and call again; the named field is the offending one |
+| `invalid_input` + `arguments: json: cannot unmarshal …` | an argument of the wrong JSON type (`types` is an array, `cd`/`refresh`/`raw` booleans) | check the argument's type in the tool list above and call again |
 | `network_error` | DoH request failed / HTTP error           | retry after a short delay; try the other `provider`; a soft rate-limit resolves on its own |
 
 ## Notes
