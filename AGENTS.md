@@ -24,6 +24,7 @@ make test       # go test -race -cover ./...  (offline; mocked HTTP)
 make check      # lint + test + build-all
 make build-all  # cross-compile linux/{amd64,arm64}, darwin/arm64, windows/amd64
 make e2e        # LIVE end-to-end vs real Cloudflare/Google DoH (network required)
+make vuln            # govulncheck over the build; `make package` runs it first and stops on a finding
 make verify-release  # gate: notarized, fresh, runs at this version, clean linux archives (run before upload)
 ```
 
