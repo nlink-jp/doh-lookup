@@ -23,7 +23,7 @@ The DNS-resolution sibling of [`asn-lookup`](https://github.com/nlink-jp/asn-loo
 # Homebrew (nlink-jp tap; prebuilt, Developer ID signed + notarized, arm64 macOS)
 brew install nlink-jp/tap/doh-lookup
 
-# From source (Go 1.25+)
+# From source (Go 1.27.4+)
 make build      # → dist/doh-lookup
 ```
 
@@ -156,7 +156,7 @@ make e2e        # live end-to-end vs real Cloudflare/Google DoH (network require
 make check      # lint + test + build-all
 ```
 
-Go 1.25+, standard library only. See [AGENTS.md](AGENTS.md) for architecture.
+Go 1.27.4+, standard library only. See [AGENTS.md](AGENTS.md) for architecture.
 
 ## License
 

@@ -21,7 +21,7 @@
 # Homebrew（nlink-jp tap; prebuilt・Developer ID 署名 + notarized・arm64 macOS）
 brew install nlink-jp/tap/doh-lookup
 
-# ソースから（Go 1.25+）
+# ソースから（Go 1.27.4+）
 make build      # → dist/doh-lookup
 ```
 
@@ -152,7 +152,7 @@ make e2e        # 実 Cloudflare/Google DoH への live E2E（ネットワーク
 make check      # lint + test + build-all
 ```
 
-Go 1.25+・標準ライブラリのみ。アーキテクチャは [AGENTS.md](AGENTS.md) を参照。
+Go 1.27.4+・標準ライブラリのみ。アーキテクチャは [AGENTS.md](AGENTS.md) を参照。
 
 ## ライセンス
 
