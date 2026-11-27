@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -16,9 +17,9 @@ import (
 //go:embed usage.md
 var usageMarkdown string
 
-// Instructions is the initialize-time hint (surfaced via the MCP
-// `instructions` field) that makes get_usage discoverable and steers clients
-// away from common errors.
+// Instructions is the hint a client receives when it opens the server (the
+// MCP `instructions` field, in initialize or server/discover) that makes
+// get_usage discoverable and steers clients away from common errors.
 const Instructions = "doh-lookup collects a domain's DNS records over DoH (DNS over HTTPS) from a public " +
 	"resolver (Cloudflare or Google), out-of-band over HTTPS so investigative queries stay distinguishable " +
 	"from ordinary DNS. Call the lookup tool with a single domain or IP; a domain is forward-resolved (the " +
@@ -64,60 +65,54 @@ func decodeArgs(raw json.RawMessage, into any) error {
 	return nil
 }
 
+
 // toolsList returns the advertised tool set with JSON Schema for each input.
-func toolsList() any {
-	return map[string]any{
-		"tools": []map[string]any{
-			{
-				"name":        "get_usage",
-				"description": "Return this server's operating manual (markdown): the tools, the result schema, and the error-recovery table. Call it once before first use.",
-				"inputSchema": obj(map[string]any{}),
-			},
-			{
-				"name":        "lookup",
-				"description": "Collect DNS records for a domain (forward) or IP (PTR reverse) over DoH. A domain with no explicit types uses the configured profile (A/AAAA/MX/TXT/NS/SOA/CAA). The result records which resolver/endpoint answered and the DNSSEC AD flag. Answers are cached locally, honoring DNS TTLs.",
-				"inputSchema": obj(map[string]any{
-					"query":    map[string]any{"type": "string", "description": "Domain name (IDN ok) or IP address."},
-					"types":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Record types (e.g. [\"A\",\"MX\"]). Ignored for IPs (always PTR). Default: the configured profile."},
-					"provider": map[string]any{"type": "string", "enum": []string{"cloudflare", "google"}, "description": "DoH provider (default: configured, usually cloudflare)."},
-					"cd":       map[string]any{"type": "boolean", "description": "Checking disabled: return records even if DNSSEC validation fails."},
-					"refresh":  map[string]any{"type": "boolean", "description": "Bypass the local cache and re-query."},
-					"raw":      map[string]any{"type": "boolean", "description": "Include each resolver's raw JSON response."},
-				}, "query"),
-			},
-			{
-				"name":        "cache_status",
-				"description": "Report the local answer-cache state: entry count, TTL floor, and the default provider.",
-				"inputSchema": obj(map[string]any{}),
-			},
+func toolsList() []map[string]any {
+	return []map[string]any{
+		{
+			"name":        "get_usage",
+			"description": "Return this server's operating manual (markdown): the tools, the result schema, and the error-recovery table. Call it once before first use.",
+			"inputSchema": obj(map[string]any{}),
+		},
+		{
+			"name":        "lookup",
+			"description": "Collect DNS records for a domain (forward) or IP (PTR reverse) over DoH. A domain with no explicit types uses the configured profile (A/AAAA/MX/TXT/NS/SOA/CAA). The result records which resolver/endpoint answered and the DNSSEC AD flag. Answers are cached locally, honoring DNS TTLs.",
+			"inputSchema": obj(map[string]any{
+				"query":    map[string]any{"type": "string", "description": "Domain name (IDN ok) or IP address."},
+				"types":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Record types (e.g. [\"A\",\"MX\"]). Ignored for IPs (always PTR). Default: the configured profile."},
+				"provider": map[string]any{"type": "string", "enum": []string{"cloudflare", "google"}, "description": "DoH provider (default: configured, usually cloudflare)."},
+				"cd":       map[string]any{"type": "boolean", "description": "Checking disabled: return records even if DNSSEC validation fails."},
+				"refresh":  map[string]any{"type": "boolean", "description": "Bypass the local cache and re-query."},
+				"raw":      map[string]any{"type": "boolean", "description": "Include each resolver's raw JSON response."},
+			}, "query"),
+		},
+		{
+			"name":        "cache_status",
+			"description": "Report the local answer-cache state: entry count, TTL floor, and the default provider.",
+			"inputSchema": obj(map[string]any{}),
 		},
 	}
 }
 
-func (s *server) toolsCall(params json.RawMessage) (toolResult, *rpcError) {
-	var p struct {
-		Name      string          `json:"name"`
-		Arguments json.RawMessage `json:"arguments"`
-	}
-	if err := json.Unmarshal(params, &p); err != nil {
-		return toolResult{}, &rpcError{Code: -32602, Message: "invalid params: " + err.Error()}
-	}
-	switch p.Name {
+// toolsCall dispatches one call by tool name and builds its result.
+func (s *server) toolsCall(ctx context.Context, name string, args json.RawMessage) toolResult {
+	switch name {
 	case "get_usage":
 		// No arguments — which still means "none", not "any".
-		if err := decodeArgs(p.Arguments, &struct{}{}); err != nil {
-			return errorResult("invalid_input", err.Error()), nil
+		if err := decodeArgs(args, &struct{}{}); err != nil {
+			return errorResult("invalid_input", err.Error())
 		}
-		return textResult(false, usageMarkdown), nil
+		return textResult(false, usageMarkdown)
 	case "lookup":
-		return s.toolLookup(p.Arguments), nil
+		return s.toolLookup(args)
 	case "cache_status":
-		if err := decodeArgs(p.Arguments, &struct{}{}); err != nil {
-			return errorResult("invalid_input", err.Error()), nil
+		if err := decodeArgs(args, &struct{}{}); err != nil {
+			return errorResult("invalid_input", err.Error())
 		}
-		return s.toolCacheStatus(), nil
+		return s.toolCacheStatus()
 	default:
-		return toolResult{}, &rpcError{Code: -32602, Message: "unknown tool: " + p.Name}
+		// Not reached: the protocol layer refuses a tool it did not register.
+		return textResult(true, "unknown tool: "+name)
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 // TestUsageMentionsEveryTool pins the manual to the advertised tool set: if a
 // tool is added or renamed, usage.md must mention it too.
 func TestUsageMentionsEveryTool(t *testing.T) {
-	b, _ := json.Marshal(toolsList())
+	b, _ := json.Marshal(map[string]any{"tools": toolsList()})
 	var payload struct {
 		Tools []struct {
 			Name string `json:"name"`
@@ -43,7 +43,7 @@ func TestUsageDocumentsErrorCodes(t *testing.T) {
 // (DisallowUnknownFields), which refuses an unknown argument that arrives
 // anyway; TestUnknownArgumentIsRefusedByName covers it.
 func TestEveryToolSchemaIsValidAndClosed(t *testing.T) {
-	b, err := json.Marshal(toolsList())
+	b, err := json.Marshal(map[string]any{"tools": toolsList()})
 	if err != nil {
 		t.Fatalf("marshal tool list: %v", err)
 	}

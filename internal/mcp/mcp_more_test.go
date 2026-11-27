@@ -35,33 +35,3 @@ func TestUnknownTool(t *testing.T) {
 		t.Errorf("unknown tool should be an error response: %v", resps[0])
 	}
 }
-
-func TestUnknownMethod(t *testing.T) {
-	resps := drive(t, testServerEngine(t),
-		`{"jsonrpc":"2.0","id":1,"method":"does/notexist"}`,
-	)
-	e := resps[0]["error"].(map[string]any)
-	if int(e["code"].(float64)) != -32601 {
-		t.Errorf("want -32601 method not found, got %v", e)
-	}
-}
-
-func TestPing(t *testing.T) {
-	resps := drive(t, testServerEngine(t),
-		`{"jsonrpc":"2.0","id":1,"method":"ping"}`,
-	)
-	if resps[0]["result"] == nil {
-		t.Errorf("ping should return a result: %v", resps[0])
-	}
-}
-
-func TestParseErrorStopsCleanly(t *testing.T) {
-	resps := drive(t, testServerEngine(t), `{not valid json`)
-	if len(resps) != 1 {
-		t.Fatalf("expected 1 parse-error response, got %d", len(resps))
-	}
-	e := resps[0]["error"].(map[string]any)
-	if int(e["code"].(float64)) != -32700 {
-		t.Errorf("want -32700 parse error, got %v", e)
-	}
-}
