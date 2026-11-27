@@ -13,7 +13,7 @@
 [`abuse-lookup`](https://github.com/nlink-jp/abuse-lookup)（評判）・
 [`whois-lookup`](https://github.com/nlink-jp/whois-lookup)（登録情報）・
 [`tor-exit-lookup`](https://github.com/nlink-jp/tor-exit-lookup)（Tor exit 判定）の
-**DNS 解決版**の姉妹ツール。**credential ゼロ・外部依存ゼロ。**
+**DNS 解決版**の姉妹ツール。**credential ゼロ・サードパーティ製の依存なし。**
 
 ## インストール
 
@@ -80,6 +80,10 @@ example.com  [forward, NOERROR, DNSSEC:validated]  via cloudflare (https://cloud
 | `2`  | エラー（不正入力・ネットワーク障害 …） |
 
 ## MCP サーバー
+
+サーバーは、プロトコルの新旧両方の時代を話します。2026-07-28 版（`server/discover` で探るクライアント）と、
+それより前の `initialize` の握手（2025-11-25・2025-06-18・2024-11-05）です。パイプで流し込んだ要求には、
+入力の終わりで終了する前にすべて答えます。
 
 ```bash
 doh-lookup mcp   # stdio JSON-RPC 2.0
@@ -152,7 +156,8 @@ make e2e        # 実 Cloudflare/Google DoH への live E2E（ネットワーク
 make check      # lint + test + build-all
 ```
 
-Go 1.27.4+・標準ライブラリのみ。アーキテクチャは [AGENTS.md](AGENTS.md) を参照。
+Go 1.27.4+。標準ライブラリと、MCP のプロトコルを担う組織の共通モジュール
+[nlink-jp/mcp](https://github.com/nlink-jp/mcp) だけを使います。アーキテクチャは [AGENTS.md](AGENTS.md) を参照。
 
 ## ライセンス
 

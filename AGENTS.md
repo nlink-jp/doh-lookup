@@ -11,7 +11,7 @@ plus the **DNSSEC AD flag**, so investigative lookups stay explicitly
 distinguishable from an organization's normal DNS (an OpSec separation: no
 resolver-cache pollution, no blending into browsing noise). A domain is
 forward-resolved (a record-type profile, or an explicit list); an IP is
-reverse-resolved (PTR). Zero credentials, zero external dependencies. The
+reverse-resolved (PTR). Zero credentials, no third-party dependencies. The
 DNS-resolution sibling of `asn-lookup` (attribution), `abuse-lookup`
 (reputation), `whois-lookup` (registration), and `tor-exit-lookup` (Tor exit
 membership).
@@ -38,7 +38,9 @@ is checked before the rename. The exclusion matches by function name, not by
 destination, so do not write a file with `fmt.Fprint*`. The four sibling lookup
 tools carry the same configuration.
 
-Go 1.27.4+. **No external dependencies** — standard library only.
+Go 1.27.4+. **No third-party dependencies** — the standard library, plus nlink-jp
+modules written on the same rule (`github.com/nlink-jp/mcp` for the MCP
+protocol, organization ADR-030; ADR-0001).
 
 ## Tests
 
@@ -67,7 +69,7 @@ internal/cache/         Per-answer TTL cache (per-record expiry), atomic writes.
 internal/config/        Sectioned-TOML subset + DOH_LOOKUP_* env/flags.
 internal/engine/        validate → provider → cache → query-per-type → aggregate.
 internal/app/           CLI dispatch; lookup/cache/mcp; --type/--provider/--json/--raw.
-internal/mcp/           Zero-dep stdio JSON-RPC 2.0 server + tools (usage.md embedded).
+internal/mcp/           MCP tools on nlink-jp/mcp's server.ToolServer (both eras; ADR-0001) (usage.md embedded).
 ```
 
 ## Key design decisions
@@ -103,6 +105,15 @@ internal/mcp/           Zero-dep stdio JSON-RPC 2.0 server + tools (usage.md emb
   investigator's network isn't leaked.
 
 ## Gotchas
+
+- **The MCP protocol is nlink-jp/mcp's** (ADR-0001, organization ADR-030 §6).
+  `internal/mcp` never handles `initialize` or `server/discover` itself: `Serve`
+  registers `toolsList()` on a `server.ToolServer` and each handler calls
+  `toolsCall`. Tests replay their requests through the module's `client`
+  (`clienttest_test.go`) and run its three probe clients; do not write the
+  handshake by hand in a test. Before initialize, `tools/*` is -32602 — the
+  module's rule, not a defect. Argument names are matched exactly
+  (`decodeArgs`, `argNames`).
 
 - **Exit-code contract (lookup):** `0` at least one target resolved / `1` every
   target returned NXDOMAIN / `2` error (invalid input, network). NXDOMAIN is a

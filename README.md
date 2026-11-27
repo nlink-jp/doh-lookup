@@ -15,7 +15,7 @@ The DNS-resolution sibling of [`asn-lookup`](https://github.com/nlink-jp/asn-loo
 (attribution), [`abuse-lookup`](https://github.com/nlink-jp/abuse-lookup)
 (reputation), [`whois-lookup`](https://github.com/nlink-jp/whois-lookup)
 (registration), and [`tor-exit-lookup`](https://github.com/nlink-jp/tor-exit-lookup)
-(Tor exit membership). **Zero credentials, zero external dependencies.**
+(Tor exit membership). **Zero credentials, no third-party dependencies.**
 
 ## Install
 
@@ -82,6 +82,11 @@ example.com  [forward, NOERROR, DNSSEC:validated]  via cloudflare (https://cloud
 | `2`  | error (invalid input, network failure, …) |
 
 ## MCP server
+
+The server speaks both eras of the protocol: the 2026-07-28 revision (clients
+that probe with `server/discover`) and the earlier `initialize` handshake
+(2025-11-25, 2025-06-18, 2024-11-05). Requests piped in are all answered before
+it exits at end of input.
 
 ```bash
 doh-lookup mcp   # stdio JSON-RPC 2.0
@@ -156,7 +161,8 @@ make e2e        # live end-to-end vs real Cloudflare/Google DoH (network require
 make check      # lint + test + build-all
 ```
 
-Go 1.27.4+, standard library only. See [AGENTS.md](AGENTS.md) for architecture.
+Go 1.27.4+: the standard library, plus the organization's module
+[nlink-jp/mcp](https://github.com/nlink-jp/mcp) for the MCP protocol. See [AGENTS.md](AGENTS.md) for architecture.
 
 ## License
 
