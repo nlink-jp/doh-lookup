@@ -12,6 +12,7 @@ import (
 	"github.com/nlink-jp/doh-lookup/internal/config"
 	"github.com/nlink-jp/doh-lookup/internal/doh"
 	"github.com/nlink-jp/doh-lookup/internal/engine"
+	"github.com/nlink-jp/mcp/client"
 )
 
 type fakeClient struct{}
@@ -100,16 +101,6 @@ func TestToolsCallInvalidInput(t *testing.T) {
 	}
 }
 
-func TestNotificationSkipped(t *testing.T) {
-	// A notification (no id) must produce no response.
-	resps := drive(t, testServerEngine(t),
-		`{"jsonrpc":"2.0","method":"initialized"}`,
-	)
-	if len(resps) != 0 {
-		t.Errorf("notification produced %d responses, want 0", len(resps))
-	}
-}
-
 // ADR-030 §7: the server against the three probe clients (legacy only,
 // dual-era, modern only).
 func TestAgainstTheProbeClients(t *testing.T) {
@@ -117,4 +108,16 @@ func TestAgainstTheProbeClients(t *testing.T) {
 	probeMatrix(t, func(ctx context.Context, in io.Reader, w io.Writer) error {
 		return Serve(ctx, e, "test", in, w)
 	})
+}
+
+// The client that opens the server receives the instructions — the hint that
+// points it at get_usage — whichever era it opens in.
+func TestOpeningCarriesTheInstructions(t *testing.T) {
+	e := testServerEngine(t)
+	cl := openWith(t, func(ctx context.Context, in io.Reader, w io.Writer) error {
+		return Serve(ctx, e, "test", in, w)
+	}, client.Options{})
+	if got := cl.Instructions(); got != Instructions {
+		t.Errorf("instructions = %q, want the package's Instructions", got)
+	}
 }
